@@ -15,6 +15,7 @@ from sqlalchemy import and_, case, event, inspection, select
 from sqlalchemy.orm import object_session
 from sqlalchemy.orm.base import NO_VALUE
 from sqlalchemy.sql import func
+import uuid
 
 
 def _insert_subtree(table, connection, node_size,
@@ -73,8 +74,7 @@ def mptt_before_insert(mapper, connection, instance):
         instance.left = 1
         instance.right = 2
         instance.level = 1
-        tree_id = connection.scalar(
-            select([func.max(table.c.tree_id) + 1])) or 1
+        tree_id = str(uuid.uuid4())
         instance.tree_id = tree_id
     else:
         (parent_pos_left,
@@ -197,7 +197,7 @@ def mptt_before_update(mapper, connection, instance):
                             'is_parent': False}
         # if move_before to top level
         elif not right_sibling_parent:
-            left_sibling_tree_id = right_sibling_tree_id - 1
+            left_sibling_tree_id = str(uuid.uuid4())
 
     # if placed after a particular node
     if hasattr(instance, 'mptt_move_after'):
@@ -296,18 +296,7 @@ def mptt_before_update(mapper, connection, instance):
                         parent_tree_id, parent_level, node_level, left_sibling,
                         table_pk)
     else:
-        # if insert after
-        if left_sibling_tree_id or left_sibling_tree_id == 0:
-            tree_id = left_sibling_tree_id + 1
-            connection.execute(
-                table.update(table.c.tree_id > left_sibling_tree_id)
-                .values(tree_id=table.c.tree_id + 1)
-            )
-        # if just insert
-        else:
-            tree_id = connection.scalar(
-                select([func.max(table.c.tree_id) + 1]))
-
+        tree_id = str(uuid.uuid4())
         connection.execute(
             table.update(table_pk.in_(subtree))
             .values(
