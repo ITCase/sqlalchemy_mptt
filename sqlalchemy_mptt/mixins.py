@@ -29,8 +29,7 @@ class BaseNestedSets(object):
     .. code::
 
         from sqlalchemy import Boolean, Column, create_engine, Integer
-        from sqlalchemy.ext.declarative import declarative_base
-        from sqlalchemy.orm import sessionmaker
+        from sqlalchemy.orm import sessionmaker, declarative_base
 
         from sqlalchemy_mptt.mixins import BaseNestedSets
 
@@ -65,7 +64,11 @@ class BaseNestedSets(object):
 
     @classmethod
     def get_pk_column(cls):
-        return getattr(cls, cls.get_pk_name())
+        col = getattr(cls, cls.get_pk_name())
+        # might be a Mapped column
+        if hasattr(col, "column") and hasattr(col.column, "name"):
+            return col.column
+        return col
 
     def get_pk_value(self):
         return getattr(self, self.get_pk_name())
@@ -342,7 +345,7 @@ class BaseNestedSets(object):
         )
 
     def path_to_root(self, session=None, order=desc):
-        """Generate path from a leaf or intermediate node to the root.
+        r"""Generate path from a leaf or intermediate node to the root.
 
         For example:
 
@@ -372,7 +375,7 @@ class BaseNestedSets(object):
         return self._base_order(query, order=order)
 
     def get_siblings(self, include_self=False, session=None):
-        """
+        r"""
         * https://github.com/uralbash/sqlalchemy_mptt/issues/64
         * https://django-mptt.readthedocs.io/en/latest/models.html#get-siblings-include-self-false
 
@@ -414,7 +417,7 @@ class BaseNestedSets(object):
         return query
 
     def get_children(self, session=None):
-        """
+        r"""
         * https://github.com/uralbash/sqlalchemy_mptt/issues/64
         * https://github.com/django-mptt/django-mptt/blob/fd76a816e05feb5fb0fc23126d33e514460a0ead/mptt/models.py#L563
 
